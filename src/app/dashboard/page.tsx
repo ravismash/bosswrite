@@ -162,7 +162,7 @@ export default function DashboardPage() {
                   onClick={copyToClipboard}
                   className="flex items-center gap-2 text-xs font-bold hover:text-red-600 transition-colors"
                 >
-                  {copied ? <Check ßsize={16} className="text-green-600" /> : <Copy size={16} />}
+                  {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}{" "}
                   {copied ? "COPIED" : "COPY"}
                 </button>
               </div>
