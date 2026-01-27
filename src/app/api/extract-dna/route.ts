@@ -1,4 +1,41 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+
+// Use your specific variable name
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_KEY || "");
+
+export async function POST(req: Request) {
+  try {
+    const { combinedPosts } = await req.json();
+
+    // 1. Initialize the model with System Instructions
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      systemInstruction: `You are a linguistic profiler for a CEO. 
+          Analyze the writing style and return ONLY a JSON object with: 
+          "sentenceStructure", "hookPattern", "forbiddenWords", "tone", "formatting".`,
+      generationConfig: {
+        responseMimeType: "application/json", // Enforces JSON output natively
+      }
+    });
+
+    // 2. Generate content using only the User's input
+    const result = await model.generateContent(`Analyze this writing style: ${combinedPosts}`);
+    const response = await result.response;
+    const text = response.text();
+
+    // 3. Return the parsed JSON
+    return NextResponse.json({ 
+      success: true, 
+      profile: JSON.parse(text) 
+    });
+
+  } catch (err: any) {
+    console.error("Linguistic_Analysis_Error:", err.message);
+    return NextResponse.json({ error: "Failed to profile style." }, { status: 500 });
+  }
+}
+/*import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
 const openrouter = new OpenAI({
@@ -63,3 +100,4 @@ export async function POST(req: Request) {
     }, { status: statusCode });
   }
 }
+*/

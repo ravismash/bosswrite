@@ -3,37 +3,34 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="w-full border-t border-zinc-900 bg-black py-16">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-10">
-          
-          {/* Copyright Section */}
-          <div className="text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
-            © 2026 <span className="text-zinc-400 italic">BossWrite AI</span>
-          </div>
-          
-          {/* Navigation Links with Dividers */}
-          <nav className="flex flex-wrap justify-center items-center text-[10px] font-black uppercase tracking-widest text-zinc-500">
-            <Link href="/terms" className="hover:text-red-600 transition-all px-3">Terms</Link>
-            
-            <span className="text-zinc-800 pointer-events-none">|</span>
-            
-            <Link href="/privacy" className="hover:text-red-600 transition-all px-3">Privacy</Link>
-            
-            <span className="text-zinc-800 pointer-events-none">|</span>
-            
-            <Link href="/refund" className="hover:text-red-600 transition-all px-3">Refunds</Link>
-            
-            <span className="text-zinc-800 pointer-events-none">|</span>
-            
-            <Link href="/help" className="hover:text-red-600 transition-all px-3">Help</Link>
-            
-            <span className="text-zinc-800 pointer-events-none">|</span>
-            
-            <Link href="/contact" className="hover:text-red-600 transition-all px-3">Contact</Link>
-          </nav>
+    <footer className="w-full border-t border-gray-100 bg-white py-10 mt-auto">
+      <div className="mx-auto max-w-7xl px-6 flex flex-col items-center gap-8">
+        
+        {/* Navigation with extra-wide spacing */}
+        <nav className="flex flex-wrap justify-center gap-x-12 gap-y-4">
+          <Link href="/help" className="text-sm text-gray-500 hover:text-black hover:underline transition-all">
+            Help Center
+          </Link>
+          <Link href="/terms" className="text-sm text-gray-500 hover:text-black hover:underline transition-all">
+            Terms of Service
+          </Link>
+          <Link href="/refund" className="text-sm text-gray-500 hover:text-black hover:underline transition-all">
+            Refund & Cancellation
+          </Link>
+          <Link href="/privacy" className="text-sm text-gray-500 hover:text-black hover:underline transition-all">
+            Privacy Policy
+          </Link>
+        </nav>
 
+        {/* Minimalist branding line */}
+        <div className="flex items-center gap-4">
+          <div className="h-px w-8 bg-gray-200" />
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+            © 2026 DNA CLONER
+          </p>
+          <div className="h-px w-8 bg-gray-200" />
         </div>
+        
       </div>
     </footer>
   );

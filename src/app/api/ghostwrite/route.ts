@@ -1,129 +1,85 @@
-import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { google } from "@ai-sdk/google";
+import { streamText } from "ai";
 
-/**
- * 1. INITIALIZATION
- * Ensure GOOGLE_AI_KEY is in your .env.local
- */
-const apiKey = process.env.GOOGLE_AI_KEY;
-
-const client = new OpenAI({
-  apiKey: apiKey || "",
-  // IMPORTANT: The trailing slash after /openai/ is required for many SDKs
-  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/" 
-});
-
-/**
- * 2. AUDIENCE PROFILES
- */
-const AUDIENCE_PROFILES: Record<string, any> = {
-  solopreneur: {
-    label: "Individual Operator",
-    focus: "Decoupling time from money and the failure of hustle.",
-    requiredLexicon: "Time-liability, linear input, biological limits, permissionless leverage.",
-    forbidden: "management, headcount, dividends, board of directors, corporate.",
-    temperature: 0.85
-  },
-  agency_owner: {
-    label: "Systems Architect",
-    focus: "The removal of the founder as a bottleneck through SOPs and systems.",
-    requiredLexicon: "Throughput, human variable, marginal cost, repeatable units, operational engine.",
-    forbidden: "hustle, solopreneur, solo, personal brand, passive income.",
-    temperature: 0.8
-  },
-  executive: {
-    label: "Capital Allocator",
-    focus: "Asymmetric upside, equity dominance, and capital efficiency.",
-    requiredLexicon: "Capital allocation, structural power, equity, asymmetric returns, market dominance.",
-    forbidden: "freedom, escape the 9-5, quit your job, happiness, unlock, journey.",
-    temperature: 0.7
-  },
-  ghostwriter: {
-    label: "Authority Architect",
-    focus: "Building intellectual gravity and high-signal authority.",
-    requiredLexicon: "Intellectual weight, signal-to-noise, logical dominance, market irrelevance.",
-    forbidden: "engagement, algorithm, likes, virality, hook, template.",
-    temperature: 0.8
-  }
-};
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "Google AI Key Missing. Add GOOGLE_AI_KEY to your .env.local" },
-      { status: 500 }
-    );
-  }
-
   try {
-    const body = await req.json();
-    
-    const { 
-      transcript,    
-      voiceProfile,  
-      audience, 
-      linkedinSamples 
-    } = body;
+    const { prompt, voiceProfile, audience } = await req.json();
 
-    const inputData = transcript || "";
+    const result = streamText({
+      model: google("gemini-2.5-flash"),
+      // ✅ 1. Use maxOutputTokens for hard API limits. 
+      // 100 tokens ≈ 75 words. For a 300-word post, 600 tokens provides a safe buffer.
+      maxOutputTokens: 9000, 
+      
+      // ✅ 2. Temperature 0.7-0.9 is the "sweet spot" for professional length.
+      // Higher (1.2+) makes it ramble; Lower (0.2) makes it too short.
+      temperature: 0.8, 
 
-    if (!inputData) {
-       return NextResponse.json({ error: "No transcript data provided." }, { status: 400 });
-    }
-
-    const profile = AUDIENCE_PROFILES[audience?.toLowerCase()] || AUDIENCE_PROFILES.solopreneur;
-    const dnaContext = voiceProfile ? JSON.stringify(voiceProfile) : (linkedinSamples || "Ownership is the law.");
-
-    const completion = await client.chat.completions.create({
-      // Use the stable 2026 model ID
-      model: "gemini-2.5-flash",
-      messages: [
-        {
-          role: "system",
-          content: `
-            You are a $100M Founder writing a manifesto for a ${profile.label}. 
-            TONE: Clinical, cold, and declarative. You state laws of physics, not advice.
-
-            STRICT AUDIENCE RULES:
-            1. FOCUS: ${profile.focus}
-            2. REQUIRED TERMINOLOGY: ${profile.requiredLexicon}
-            3. FORBIDDEN FOR THIS AUDIENCE: ${profile.forbidden}
-
-            GLOBAL OPERATIONAL LAWS:
-            - Use Second Person ("You") exclusively. 
-            - No academic transitions (moreover, consequently, therefore).
-            - No soft words (success, prosperity, financial freedom, journey).
-            - The first sentence must be a direct confrontation of a structural failure.
-            - Use dense, logical, and sophisticated sentence structures.
-          `
-        },
-        {
-          role: "user",
-          content: `
-            TRANSCRIPT DATA: ${inputData} 
-            VOICE DNA PROFILE: ${dnaContext}
-
-            TASK: Write a 180 - 220-word LinkedIn manifesto. End with a cold, definitive period.
-          `
-        }
-      ],
-      temperature: profile.temperature,
-      // Penalties are removed here as they often trigger 400 errors in the Gemini bridge
-      max_tokens: 5000, 
+      system: `You are a clinical $100M Founder. Target: ${audience}.
+      
+      POST GUIDELINES:
+      - Write a high-impact manifesto based on the provided transcript.
+      - LENGTH: Strictly between 250 and 300 words.
+      - FORMAT: Use 3-4 concise paragraphs with punchy bold headers.
+      - TONE: Clinical, zero-fluff, high-conviction.
+      
+      CRITICAL: Do not exceed 300 words. If you reach the limit, finish the sentence and stop.`,
+      
+      prompt: `TRANSCRIPT: ${prompt}\nDNA: ${JSON.stringify(voiceProfile)}`,
+      
+      onFinish: ({ text, usage }) => {
+        const wordCount = text.split(/\s+/).length;
+        console.log(`--- POST GENERATED ---`);
+        console.log(`Words: ${wordCount} | Tokens: ${usage.totalTokens}`);
+      },
     });
 
-    const post = completion.choices?.[0]?.message?.content?.trim() || "";
-    const cleanPost = post.replace(/^(Post:|Manifesto:|LinkedIn Post:|Here is)/i, "").trim();
-
-    return NextResponse.json({ success: true, post: cleanPost });
+    // 2. toDataStreamResponse() is the modern standard for AI SDK UI hooks.
+    // It handles the Data Stream Protocol automatically.
+    return result.toTextStreamResponse();
 
   } catch (error: any) {
-    console.error("GHOSTWRITE_API_ERROR (GEMINI):", error);
-    
-    // Improved error reporting for 404/403 debugging
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error", code: error.status },
-      { status: error.status || 500 }
+    console.error("DEBUG_GEMINI_ERROR:", error);
+    return new Response(
+      JSON.stringify({ error: error.message || "An unknown error occurred" }), 
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }
+/*import { google } from "@ai-sdk/google";
+import { streamText } from "ai";
+
+export const maxDuration = 300;
+
+export async function POST(req: Request) {
+  try {
+    const { prompt, voiceProfile, audience } = await req.json();
+
+    // 1. streamText is synchronous in v6; do NOT await it here if you want to stream.
+    // Ensure the model is passed via the google() function, not a string.
+    const result = streamText({
+      model: google("gemini-2.5-flash"),
+      system: `You are a clinical $100M Founder. Target: ${audience}.`,
+      prompt: `TRANSCRIPT: ${prompt}\nDNA: ${JSON.stringify(voiceProfile)}`,
+      onFinish: ({ text, usage }) => {
+        console.log("--- FINAL GENERATED POST ---");
+        console.log(text);
+        console.log(`Usage: ${usage.totalTokens} tokens`);
+      },
+    });
+
+    // 2. toDataStreamResponse() is the modern standard for AI SDK UI hooks.
+    // It handles the Data Stream Protocol automatically.
+    return result.toTextStreamResponse();
+
+  } catch (error: any) {
+    console.error("DEBUG_GEMINI_ERROR:", error);
+    return new Response(
+      JSON.stringify({ error: error.message || "An unknown error occurred" }), 
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+*/
