@@ -19,25 +19,21 @@ export default function DashboardPage() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   // 1. AI HOOK SETUP
-const { completion, complete, isLoading: isAiWriting } = useCompletion({
-  api: "/api/ghostwrite",
-  // ⚡️ ENSURE PROTOCOL MATCHES BACKEND
-  // If your backend uses toDataStreamResponse(), keep 'data' (default)
-  // If your backend uses toTextStreamResponse(), use 'text'
-  streamProtocol: 'text', 
-  onFinish: (prompt, completion) => { // v6: onFinish receives prompt and completion
-    setLoading(false);
-    setStep("");
-    if (credits !== null) setCredits(prev => (prev !== null ? prev - 1 : null));
-  },
-  onError: (err) => {
-    console.error("AI Error:", err);
-    // 💡 Helpful Hint: If you see "No separator found", the protocols are mismatched.
-    alert(`⚠️ GHOSTWRITE ERROR: ${err.message}`);
-    setLoading(false);
-    setStep("");
-  }
-});
+  const { completion, complete, isLoading: isAiWriting } = useCompletion({
+    api: "/api/ghostwrite",
+    streamProtocol: 'text', 
+    onFinish: (prompt, completion) => {
+      setLoading(false);
+      setStep("");
+      if (credits !== null) setCredits(prev => (prev !== null ? prev - 1 : null));
+    },
+    onError: (err) => {
+      console.error("AI Error:", err);
+      alert(`⚠️ GHOSTWRITE ERROR: ${err.message}`);
+      setLoading(false);
+      setStep("");
+    }
+  });
 
   useEffect(() => {
     const checkSession = async () => {
@@ -62,7 +58,6 @@ const { completion, complete, isLoading: isAiWriting } = useCompletion({
   const generatePost = async () => {
     if (credits !== null && credits < 1) return alert("Out of credits!");
     
-    // Reset states
     setLoading(true);
 
     try {
@@ -85,17 +80,12 @@ const { completion, complete, isLoading: isAiWriting } = useCompletion({
       if (!transData.transcript) throw new Error("No transcript found");
 
       setStep("Writing Manifesto...");
-      
-      // 2. TRIGGER STREAMING (Do NOT await this)
       complete(transData.transcript, {
         body: { 
           voiceProfile: dnaData.voiceJson, 
           audience: userType 
         }
       });
-
-      // Note: we don't setLoading(false) here. 
-      // The useCompletion's onFinish callback handles the cleanup.
 
     } catch (error: any) {
       console.error("Workflow Error:", error);
@@ -108,23 +98,38 @@ const { completion, complete, isLoading: isAiWriting } = useCompletion({
   if (isAuthLoading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-black uppercase tracking-widest animate-pulse">Authenticating Boss...</div>;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12 font-inter">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12">
-        <aside className="w-full md:w-1/3 flex flex-col gap-8">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-black italic uppercase tracking-tighter font-montserrat">BossWrite</h1>
-            <button onClick={() => supabase.auth.signOut().then(() => router.push("/login"))} className="text-zinc-500 hover:text-white transition-colors">
-              <LogOut size={20} />
-            </button>
-          </div>
-          <div className="bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800 space-y-6">
+    <div className="min-h-screen bg-black text-white p-6 md:p-12 font-inter relative">
+      {/* TOP NAVIGATION BAR */}
+      <div className="flex items-center justify-between mb-12 pb-8 border-b border-zinc-800">
+        <div />
+        <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter font-montserrat absolute left-1/2 transform -translate-x-1/2">
+          BossWrite
+        </h1>
+        <button 
+          onClick={() => supabase.auth.signOut().then(() => router.push("/login"))} 
+          className="text-zinc-500 hover:text-white transition-all p-2 rounded-lg hover:bg-zinc-900"
+          title="Logout"
+        >
+          <LogOut size={24} />
+        </button>
+      </div>
+
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-12 items-start">
+        {/* SIDEBAR - FIXED */}
+        <aside className="w-full lg:w-80 xl:w-96 flex-shrink-0 flex flex-col gap-8">
+          <div className="bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800 space-y-6 flex-1">
             <div>
               <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-1">Available Credits</p>
               <p className="text-4xl font-black text-white italic">{credits ?? "..."}</p>
             </div>
-            <AudienceSelector selected={userType} onChange={setUserType} />
+            {/* ✅ AudienceSelector now properly contained */}
+            <div className="w-full">
+              <AudienceSelector selected={userType} onChange={setUserType} />
+            </div>
           </div>
-          <div className="mt-auto space-y-4 bg-zinc-950 p-6 rounded-3xl border border-dashed border-zinc-800">
+          
+          {/* BOTTOM LEFT LINKS */}
+          <div className="space-y-4 bg-zinc-950 p-6 rounded-3xl border border-dashed border-zinc-800">
             <Link href="/help" className="flex items-center gap-3 text-zinc-400 hover:text-red-500 transition-all group">
               <HelpCircle size={18} />
               <span className="text-xs font-black uppercase tracking-widest">Pro Guide</span>
@@ -136,7 +141,8 @@ const { completion, complete, isLoading: isAiWriting } = useCompletion({
           </div>
         </aside>
 
-        <main className="flex-1 space-y-6">
+        {/* MAIN CONTENT */}
+        <main className="flex-1 space-y-6 min-w-0">
           <div className="space-y-4">
             <input 
               className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl outline-none focus:border-red-600 transition-all text-sm text-white"
@@ -161,7 +167,6 @@ const { completion, complete, isLoading: isAiWriting } = useCompletion({
             </button>
           </div>
 
-          {/* RESULT VIEW */}
           {completion && (
             <div className="relative mt-10 p-8 bg-white text-black rounded-3xl shadow-2xl animate-in fade-in slide-in-from-bottom-4">
               <div className="flex justify-between items-center mb-6 border-b border-zinc-100 pb-4">
