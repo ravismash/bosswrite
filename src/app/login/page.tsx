@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { Fingerprint } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -32,35 +33,40 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4 selection:bg-red-600">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-zinc-900 p-4 selection:bg-red-100 selection:text-red-900">
       <div className="w-full max-w-sm">
         
         {/* Branding */}
         <div className="text-center mb-10">
-          <Link href="/" className="group">
-            <h1 className="text-3xl font-black italic uppercase tracking-tighter group-hover:text-red-600 transition-colors">
+          <Link href="/" className="group inline-block">
+            <div className="flex justify-center mb-4">
+               <div className="w-12 h-12 bg-white rounded-xl border border-zinc-200 flex items-center justify-center shadow-sm group-hover:border-red-600 transition-colors">
+                 <Fingerprint className="w-6 h-6 text-zinc-900 group-hover:text-red-600 transition-colors" />
+               </div>
+            </div>
+            <h1 className="text-3xl font-black italic uppercase tracking-tighter text-zinc-900 group-hover:text-red-600 transition-colors">
               BossWrite
             </h1>
           </Link>
-          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">
+          <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">
             The Executive Ghostwriter
           </p>
         </div>
 
         {/* Login Box */}
-        <div className="bg-zinc-900/40 border border-zinc-800 p-8 rounded-2xl shadow-2xl backdrop-blur-sm">
-          <h2 className="text-xl font-black uppercase italic mb-6">Access HQ</h2>
+        <div className="bg-white border border-zinc-200 p-8 rounded-2xl shadow-xl shadow-zinc-200/50">
+          <h2 className="text-xl font-black uppercase italic mb-6 text-zinc-900">Access HQ</h2>
           
-          <form onSubmit={handleMagicLink} className="space-y-4">
+          <form onSubmit={handleMagicLink} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                 Professional Email
               </label>
               <input
                 type="email"
                 placeholder="you@company.com"
                 required
-                className="w-full bg-black border border-zinc-700 p-4 rounded-xl focus:border-red-600 outline-none transition-all text-sm text-white"
+                className="w-full bg-white border border-zinc-200 p-4 rounded-xl focus:border-red-600 outline-none transition-all text-sm text-zinc-900 placeholder:text-zinc-300"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -68,10 +74,10 @@ export default function LoginPage() {
 
             <button
               disabled={loading}
-              className={`w-full py-4 rounded-xl font-black uppercase tracking-widest transition-all ${
+              className={`w-full py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-lg ${
                 loading 
-                  ? "bg-zinc-800 text-zinc-600 cursor-not-allowed" 
-                  : "bg-white text-black hover:bg-red-600 hover:text-white active:scale-[0.98]"
+                  ? "bg-zinc-100 text-zinc-400 cursor-not-allowed shadow-none" 
+                  : "bg-zinc-900 text-white hover:bg-red-600 hover:shadow-red-600/20 active:scale-[0.98]"
               }`}
             >
               {loading ? "Transmitting..." : "Get Magic Link"}
@@ -80,17 +86,17 @@ export default function LoginPage() {
 
           {/* Feedback UI */}
           {message && (
-            <div className={`mt-6 p-4 rounded-lg text-xs font-bold text-center animate-in ${
+            <div className={`mt-6 p-4 rounded-lg text-xs font-bold text-center animate-in fade-in slide-in-from-top-2 ${
               message.type === "success" 
-                ? "bg-green-500/10 text-green-500 border border-green-500/20" 
-                : "bg-red-500/10 text-red-500 border border-red-500/20"
+                ? "bg-green-50 text-green-700 border border-green-200" 
+                : "bg-red-50 text-red-700 border border-red-200"
             }`}>
               {message.text}
             </div>
           )}
         </div>
 
-        <p className="mt-8 text-center text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
+        <p className="mt-8 text-center text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
           Secure • Passwordless • Single-Use Link
         </p>
       </div>

@@ -95,19 +95,19 @@ export default function DashboardPage() {
     }
   };
 
-  if (isAuthLoading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-black uppercase tracking-widest animate-pulse">Authenticating Boss...</div>;
+  if (isAuthLoading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-zinc-900 font-black uppercase tracking-widest animate-pulse">Authenticating Boss...</div>;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12 font-inter relative">
+    <div className="min-h-screen bg-gray-50 text-zinc-600 p-6 md:p-12 font-inter relative">
       {/* TOP NAVIGATION BAR */}
-      <div className="flex items-center justify-between mb-12 pb-8 border-b border-zinc-800">
+      <div className="flex items-center justify-between mb-12 pb-8 border-b border-zinc-200">
         <div />
-        <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter font-montserrat absolute left-1/2 transform -translate-x-1/2">
+        <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter font-montserrat text-zinc-900 absolute left-1/2 transform -translate-x-1/2">
           BossWrite
         </h1>
         <button 
           onClick={() => supabase.auth.signOut().then(() => router.push("/login"))} 
-          className="text-zinc-500 hover:text-white transition-all p-2 rounded-lg hover:bg-zinc-900"
+          className="text-zinc-400 hover:text-red-600 transition-all p-2 rounded-lg hover:bg-red-50"
           title="Logout"
         >
           <LogOut size={24} />
@@ -117,24 +117,24 @@ export default function DashboardPage() {
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-12 items-start">
         {/* SIDEBAR - FIXED */}
         <aside className="w-full lg:w-80 xl:w-96 flex-shrink-0 flex flex-col gap-8">
-          <div className="bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800 space-y-6 flex-1">
+          <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-lg shadow-zinc-200/50 space-y-6 flex-1">
             <div>
-              <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-1">Available Credits</p>
-              <p className="text-4xl font-black text-white italic">{credits ?? "..."}</p>
+              <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Available Credits</p>
+              <p className="text-5xl font-black text-zinc-900 italic">{credits ?? "..."}</p>
             </div>
-            {/* ✅ AudienceSelector now properly contained */}
-            <div className="w-full">
+            {/* ✅ AudienceSelector */}
+            <div className="w-full pt-4 border-t border-zinc-100">
               <AudienceSelector selected={userType} onChange={setUserType} />
             </div>
           </div>
           
           {/* BOTTOM LEFT LINKS */}
-          <div className="space-y-4 bg-zinc-950 p-6 rounded-3xl border border-dashed border-zinc-800">
-            <Link href="/help" className="flex items-center gap-3 text-zinc-400 hover:text-red-500 transition-all group">
+          <div className="space-y-4 bg-white p-6 rounded-3xl border border-zinc-200 shadow-sm">
+            <Link href="/help" className="flex items-center gap-3 text-zinc-500 hover:text-red-600 transition-all group">
               <HelpCircle size={18} />
               <span className="text-xs font-black uppercase tracking-widest">Pro Guide</span>
             </Link>
-            <a href="mailto:support@bosswrite.ai" className="flex items-center gap-3 text-zinc-400 hover:text-white transition-all">
+            <a href="mailto:support@bosswrite.ai" className="flex items-center gap-3 text-zinc-500 hover:text-red-600 transition-all">
               <MessageSquare size={18} />
               <span className="text-xs font-black uppercase tracking-widest">Send Feedback</span>
             </a>
@@ -143,24 +143,32 @@ export default function DashboardPage() {
 
         {/* MAIN CONTENT */}
         <main className="flex-1 space-y-6 min-w-0">
-          <div className="space-y-4">
-            <input 
-              className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl outline-none focus:border-red-600 transition-all text-sm text-white"
-              placeholder="YouTube URL" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)}
-            />
-            <textarea 
-              className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl h-48 outline-none focus:border-red-600 transition-all text-sm text-white"
-              placeholder="Paste writing samples..." value={samples} onChange={(e) => setSamples(e.target.value)}
-            />
+          <div className="space-y-4 bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm">
+            <div>
+                <label className="block text-xs font-bold text-zinc-900 uppercase tracking-wide mb-2">Source Material</label>
+                <input 
+                className="w-full bg-gray-50 border border-zinc-200 p-4 rounded-xl outline-none focus:border-red-600 focus:bg-white transition-all text-sm text-zinc-900 placeholder:text-zinc-400"
+                placeholder="Paste YouTube URL here..." value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)}
+                />
+            </div>
+            
+            <div>
+                <label className="block text-xs font-bold text-zinc-900 uppercase tracking-wide mb-2 mt-2">Writing Samples (Optional)</label>
+                <textarea 
+                className="w-full bg-gray-50 border border-zinc-200 p-4 rounded-xl h-40 outline-none focus:border-red-600 focus:bg-white transition-all text-sm text-zinc-900 placeholder:text-zinc-400 resize-none"
+                placeholder="Paste your previous posts here to match style..." value={samples} onChange={(e) => setSamples(e.target.value)}
+                />
+            </div>
+
             <button 
               disabled={loading || isAiWriting} onClick={generatePost}
-              className={`w-full py-5 rounded-xl font-black uppercase tracking-widest transition-all ${
-                loading || isAiWriting ? "bg-zinc-800 text-zinc-500 cursor-not-allowed" : "bg-red-600 hover:bg-white hover:text-black shadow-lg shadow-red-900/20"
+              className={`w-full py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-xl ${
+                loading || isAiWriting ? "bg-zinc-100 text-zinc-400 cursor-not-allowed shadow-none" : "bg-red-600 hover:bg-black text-white shadow-red-600/20"
               }`}
             >
               {loading || isAiWriting ? (
                 <span className="flex items-center justify-center gap-2">
-                   <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
+                   <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"></span>
                    {step || "Generating..."}
                 </span>
               ) : "Execute Manifesto"}
@@ -168,17 +176,17 @@ export default function DashboardPage() {
           </div>
 
           {completion && (
-            <div className="relative mt-10 p-8 bg-white text-black rounded-3xl shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-              <div className="flex justify-between items-center mb-6 border-b border-zinc-100 pb-4">
+            <div className="relative mt-10 p-10 bg-white text-zinc-900 rounded-3xl border border-zinc-200 shadow-2xl shadow-zinc-200/50 animate-in fade-in slide-in-from-bottom-4">
+              <div className="flex justify-between items-center mb-8 border-b border-zinc-100 pb-6">
                 <span className="text-[10px] font-black uppercase tracking-tighter text-zinc-400 flex items-center gap-2">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  LinkedIn Optimized Manifesto
+                  Generated Output
                 </span>
-                <button onClick={copyToClipboard} className="flex items-center gap-2 text-xs font-bold hover:text-red-600 transition-colors">
+                <button onClick={copyToClipboard} className="flex items-center gap-2 text-xs font-bold text-zinc-500 hover:text-red-600 transition-colors">
                   {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />} {copied ? "COPIED" : "COPY"}
                 </button>
               </div>
-              <p className="whitespace-pre-wrap font-serif text-xl leading-relaxed italic text-zinc-900">
+              <p className="whitespace-pre-wrap font-serif text-xl leading-relaxed text-zinc-800 selection:bg-red-100">
                 {completion}
               </p>
             </div>
