@@ -14,18 +14,26 @@ export default function DashboardPage() {
   const [userType, setUserType] = useState("solopreneur");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState("");
+  
+  // 1. New State for Admin Role
   const [credits, setCredits] = useState<number | null>(null);
+  const [role, setRole] = useState<string>("user");
+  
   const [copied, setCopied] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  // 1. AI HOOK SETUP
+  // 2. AI HOOK SETUP
   const { completion, complete, isLoading: isAiWriting } = useCompletion({
     api: "/api/ghostwrite",
     streamProtocol: 'text', 
     onFinish: (prompt, completion) => {
       setLoading(false);
       setStep("");
-      if (credits !== null) setCredits(prev => (prev !== null ? prev - 1 : null));
+      
+      // ✅ Only deduct client-side credit if NOT admin
+      if (role !== 'admin' && credits !== null) {
+        setCredits(prev => (prev !== null ? prev - 1 : null));
+      }
     },
     onError: (err) => {
       console.error("AI Error:", err);
@@ -41,8 +49,17 @@ export default function DashboardPage() {
       if (!user) {
         router.push("/login");
       } else {
-        const { data: profile } = await supabase.from("profiles").select("credits").eq("id", user.id).single();
-        if (profile) setCredits(profile.credits);
+        // ✅ Fetch Role AND Credits
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("credits, role")
+          .eq("id", user.id)
+          .single();
+          
+        if (profile) {
+          setCredits(profile.credits);
+          setRole(profile.role);
+        }
         setIsAuthLoading(false);
       }
     };
@@ -56,11 +73,18 @@ export default function DashboardPage() {
   };
 
   const generatePost = async () => {
-    if (credits !== null && credits < 1) return alert("Out of credits!");
+    // ✅ Bypass credit check for Admins
+    if (role !== 'admin' && (credits !== null && credits < 1)) {
+        return alert("Out of credits!");
+    }
     
     setLoading(true);
 
     try {
+      // 1. Get User ID (Need to send this to API now)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not found");
+
       setStep("Extracting Voice DNA...");
       const dnaRes = await fetch("/api/extract-dna", {
         method: "POST",
@@ -80,10 +104,13 @@ export default function DashboardPage() {
       if (!transData.transcript) throw new Error("No transcript found");
 
       setStep("Writing Manifesto...");
+      
+      // ✅ Pass userId in body for server-side verification
       complete(transData.transcript, {
         body: { 
           voiceProfile: dnaData.voiceJson, 
-          audience: userType 
+          audience: userType,
+          userId: user.id 
         }
       });
 
@@ -119,10 +146,15 @@ export default function DashboardPage() {
         <aside className="w-full lg:w-80 xl:w-96 flex-shrink-0 flex flex-col gap-8">
           <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-lg shadow-zinc-200/50 space-y-6 flex-1">
             <div>
-              <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Available Credits</p>
-              <p className="text-5xl font-black text-zinc-900 italic">{credits ?? "..."}</p>
+              {/* ✅ Dynamic Label */}
+              <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">
+                {role === 'admin' ? "Admin Access" : "Available Credits"}
+              </p>
+              {/* ✅ Infinity Symbol for Admin */}
+              <p className="text-5xl font-black text-zinc-900 italic">
+                {role === 'admin' ? "∞" : (credits ?? "...")}
+              </p>
             </div>
-            {/* ✅ AudienceSelector */}
             <div className="w-full pt-4 border-t border-zinc-100">
               <AudienceSelector selected={userType} onChange={setUserType} />
             </div>
