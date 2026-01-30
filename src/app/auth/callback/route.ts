@@ -1,40 +1,40 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { type NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
-export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
-  
-  // We use this to return the user to the dashboard
-  const redirectTo = `${origin}/dashboard`
+export async function GET(request: NextRequest) {
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  const next = searchParams.get("next") ?? "/dashboard";
 
   if (code) {
-    const cookieStore = await cookies()
+    const cookieStore = cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) { return cookieStore.get(name)?.value },
-          set(name: string, value: string, options: CookieOptions) {
-            cookieStore.set({ name, value, ...options })
+          async get(name: string) {
+            return (await cookieStore).get(name)?.value;
           },
-          remove(name: string, options: CookieOptions) {
-            cookieStore.set({ name, value: '', ...options })
+          async set(name: string, value: string, options: CookieOptions) {
+            (await cookieStore).set({ name, value, ...options });
+          },
+          async remove(name: string, options: CookieOptions) {
+            (await cookieStore).delete({ name, ...options });
           },
         },
       }
-    )
-
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    );
+    
+    // Exchange the code for a session
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
     
     if (!error) {
-      // SUCCESS: The session is now in the cookies
-      return NextResponse.redirect(redirectTo)
+      return NextResponse.redirect(`${origin}${next}`);
     }
   }
 
-  // FAIL: Send them back to login with a hint
-  return NextResponse.redirect(`${origin}/login?error=session_failed`)
+  // If error, return to login with error
+  return NextResponse.redirect(`${origin}/login?error=auth-code-error`);
 }
