@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     // ---------------------------------------------------------
 
     const result = streamText({
-      model: google("gemini-1.5-flash"), // Updated to stable 1.5 (Change to 2.0 if you have beta access)
+      model: google("gemini-2.0-flash"), // Updated to stable 1.5 (Change to 2.0 if you have beta access)
       maxOutputTokens: 1000, // Enough for ~700 words
       temperature: 0.8, 
 
