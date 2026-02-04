@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { usePathname } from "next/navigation";
 import { 
   Fingerprint, 
   LayoutDashboard, 
@@ -15,17 +14,7 @@ import { useState } from "react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-  );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
 
   return (
     <div className="flex min-h-screen bg-zinc-50 font-sans text-zinc-900">
@@ -73,13 +62,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Footer / User Info */}
         <div className="p-4 border-t border-zinc-100 bg-zinc-50/50">
-          <button 
-            onClick={handleSignOut}
-            className="flex items-center gap-3 px-4 py-3 w-full text-sm font-bold text-zinc-500 hover:text-red-600 transition-colors rounded-xl hover:bg-white hover:shadow-sm"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
-          </button>
+          {/* ✅ UPDATED: Form Action for Server-Side Logout */}
+          <form action="/auth/signout" method="post">
+            <button 
+              type="submit"
+              className="flex items-center gap-3 px-4 py-3 w-full text-sm font-bold text-zinc-500 hover:text-red-600 transition-colors rounded-xl hover:bg-white hover:shadow-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out</span>
+            </button>
+          </form>
         </div>
       </aside>
 
@@ -104,9 +96,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="bg-white w-3/4 h-full pt-20 p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
             <NavItem href="/dashboard" icon={<LayoutDashboard />} label="Generator" isActive={pathname === "/dashboard"} />
             <NavItem href="/dashboard/billing" icon={<CreditCard />} label="Billing" isActive={pathname === "/dashboard/billing"} />
-            <button onClick={handleSignOut} className="flex items-center gap-3 px-4 py-3 w-full text-sm font-bold text-red-600">
-              <LogOut className="w-5 h-5" /> Sign Out
-            </button>
+            
+            {/* ✅ UPDATED: Form Action for Mobile Logout */}
+            <form action="/auth/signout" method="post">
+               <button type="submit" className="flex items-center gap-3 px-4 py-3 w-full text-sm font-bold text-red-600">
+                 <LogOut className="w-5 h-5" /> Sign Out
+               </button>
+            </form>
           </div>
         </div>
       )}
