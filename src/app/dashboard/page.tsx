@@ -1,114 +1,138 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import AudienceSelector from "@/components/AudienceSelector";
-import { LogOut, HelpCircle, MessageSquare, Copy, Check } from "lucide-react";
+import LinkedInPreview from "@/components/LinkedInPreview";
 import Link from "next/link";
 import { useCompletion } from "@ai-sdk/react";
+import { 
+  Wand2, 
+  CreditCard, 
+  Zap, 
+  Youtube,
+  FileText
+} from "lucide-react";
 
 export default function DashboardPage() {
   const router = useRouter();
+  
+  // Input State
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [samples, setSamples] = useState("");
   const [userType, setUserType] = useState("solopreneur");
+  
+  // UI State
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState("");
   
-  // 1. New State for Admin Role
+  // Auth & Credit State
   const [credits, setCredits] = useState<number | null>(null);
   const [role, setRole] = useState<string>("user");
-  
-  const [copied, setCopied] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  // 2. AI HOOK SETUP
+  // 1. AI HOOK (✅ FIXED: Added streamProtocol: 'text')
   const { completion, complete, isLoading: isAiWriting } = useCompletion({
     api: "/api/ghostwrite",
-    streamProtocol: 'text', 
-    onFinish: (prompt, completion) => {
+    streamProtocol: 'text', // <--- THIS LINE FIXES THE PARSING ERROR
+    onFinish: () => {
       setLoading(false);
       setStep("");
-      
-      // ✅ Only deduct client-side credit if NOT admin
+      // Visual update only (server handles real deduction)
       if (role !== 'admin' && credits !== null) {
-        setCredits(prev => (prev !== null ? prev - 1 : null));
+        setCredits(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
       }
     },
     onError: (err) => {
       console.error("AI Error:", err);
-      alert(`⚠️ GHOSTWRITE ERROR: ${err.message}`);
+      // Clean up the error message if it's a JSON string
+      let msg = err.message;
+      try {
+        const parsed = JSON.parse(msg);
+        if (parsed.error) msg = parsed.error;
+      } catch (e) {
+        // ignore json parse error, stick to original string
+      }
+      alert(`⚠️ ${msg}`);
       setLoading(false);
       setStep("");
     }
   });
 
+  // 2. CHECK SESSION & CREDITS
   useEffect(() => {
     const checkSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push("/login");
-      } else {
-        // ✅ Fetch Role AND Credits
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("credits, role")
-          .eq("id", user.id)
-          .single();
-          
-        if (profile) {
-          setCredits(profile.credits);
-          setRole(profile.role);
-        }
-        setIsAuthLoading(false);
+        return;
       }
+      
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("credits, role")
+        .eq("id", user.id)
+        .single();
+        
+      if (profile) {
+        setCredits(profile.credits);
+        setRole(profile.role);
+      }
+      setIsAuthLoading(false);
     };
     checkSession();
   }, [router]);
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(completion);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
+  // 3. GENERATION LOGIC
   const generatePost = async () => {
-    // ✅ Bypass credit check for Admins
+    // 🛡️ Credit Gate
     if (role !== 'admin' && (credits !== null && credits < 1)) {
-        return alert("Out of credits!");
+        return; 
     }
     
     setLoading(true);
 
     try {
-      // 1. Get User ID (Need to send this to API now)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not found");
 
-      setStep("Extracting Voice DNA...");
-      const dnaRes = await fetch("/api/extract-dna", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ posts: [samples] }),
-      });
-      const dnaData = await dnaRes.json();
+      // --- STEP A: Fetch Transcript ---
+      let transcriptText = "";
       
-      setStep("Fetching Transcript...");
-      const transRes = await fetch("/api/transcript", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: youtubeUrl }),
-      });
-      const transData = await transRes.json();
-      
-      if (!transData.transcript) throw new Error("No transcript found");
+      if (youtubeUrl) {
+        setStep("Fetching Transcript...");
+        const transRes = await fetch("/api/transcript", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: youtubeUrl }),
+        });
+        const transData = await transRes.json();
+        if (!transData.transcript) throw new Error("Could not extract transcript.");
+        transcriptText = transData.transcript;
+      } else {
+        transcriptText = samples;
+      }
 
-      setStep("Writing Manifesto...");
+      // --- STEP B: Extract Voice DNA ---
+      let voiceProfile = {};
+      if (samples) {
+        setStep("Extracting Voice DNA...");
+        const dnaRes = await fetch("/api/extract-dna", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ posts: [samples] }),
+        });
+        const dnaData = await dnaRes.json();
+        voiceProfile = dnaData.voiceJson;
+      }
+
+      // --- STEP C: Generate Manifesto ---
+      setStep("Ghostwriting...");
       
-      // ✅ Pass userId in body for server-side verification
-      complete(transData.transcript, {
+      complete(transcriptText, {
         body: { 
-          voiceProfile: dnaData.voiceJson, 
+          voiceProfile, 
           audience: userType,
           userId: user.id 
         }
@@ -116,115 +140,125 @@ export default function DashboardPage() {
 
     } catch (error: any) {
       console.error("Workflow Error:", error);
-      alert(`⚠️ ERROR: ${error.message}`);
+      alert(`⚠️ ${error.message}`);
       setLoading(false);
       setStep("");
     }
   };
 
-  if (isAuthLoading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-zinc-900 font-black uppercase tracking-widest animate-pulse">Authenticating Boss...</div>;
+  if (isAuthLoading) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-zinc-600 p-6 md:p-12 font-inter relative">
-      {/* TOP NAVIGATION BAR */}
-      <div className="flex items-center justify-between mb-12 pb-8 border-b border-zinc-200">
-        <div />
-        <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter font-montserrat text-zinc-900 absolute left-1/2 transform -translate-x-1/2">
-          BossWrite
-        </h1>
-        <button 
-          onClick={() => supabase.auth.signOut().then(() => router.push("/login"))} 
-          className="text-zinc-400 hover:text-red-600 transition-all p-2 rounded-lg hover:bg-red-50"
-          title="Logout"
-        >
-          <LogOut size={24} />
-        </button>
-      </div>
+    <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-8">
+      {/* HEADER */}
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+           <h1 className="text-3xl font-black italic tracking-tighter uppercase text-zinc-900">
+             Mission Control
+           </h1>
+           <p className="text-zinc-500 font-medium">
+             Deploy AI to turn content into influence.
+           </p>
+        </div>
 
-      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-12 items-start">
-        {/* SIDEBAR - FIXED */}
-        <aside className="w-full lg:w-80 xl:w-96 flex-shrink-0 flex flex-col gap-8">
-          <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-lg shadow-zinc-200/50 space-y-6 flex-1">
-            <div>
-              {/* ✅ Dynamic Label */}
-              <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">
-                {role === 'admin' ? "Admin Access" : "Available Credits"}
-              </p>
-              {/* ✅ Infinity Symbol for Admin */}
-              <p className="text-5xl font-black text-zinc-900 italic">
-                {role === 'admin' ? "∞" : (credits ?? "...")}
-              </p>
-            </div>
-            <div className="w-full pt-4 border-t border-zinc-100">
-              <AudienceSelector selected={userType} onChange={setUserType} />
-            </div>
-          </div>
-          
-          {/* BOTTOM LEFT LINKS */}
-          <div className="space-y-4 bg-white p-6 rounded-3xl border border-zinc-200 shadow-sm">
-            <Link href="/help" className="flex items-center gap-3 text-zinc-500 hover:text-red-600 transition-all group">
-              <HelpCircle size={18} />
-              <span className="text-xs font-black uppercase tracking-widest">Pro Guide</span>
-            </Link>
-            <a href="mailto:support@bosswrite.ai" className="flex items-center gap-3 text-zinc-500 hover:text-red-600 transition-all">
-              <MessageSquare size={18} />
-              <span className="text-xs font-black uppercase tracking-widest">Send Feedback</span>
-            </a>
-          </div>
-        </aside>
-
-        {/* MAIN CONTENT */}
-        <main className="flex-1 space-y-6 min-w-0">
-          <div className="space-y-4 bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm">
-            <div>
-                <label className="block text-xs font-bold text-zinc-900 uppercase tracking-wide mb-2">Source Material</label>
-                <input 
-                className="w-full bg-gray-50 border border-zinc-200 p-4 rounded-xl outline-none focus:border-red-600 focus:bg-white transition-all text-sm text-zinc-900 placeholder:text-zinc-400"
-                placeholder="Paste YouTube URL here..." value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)}
-                />
-            </div>
-            
-            <div>
-                <label className="block text-xs font-bold text-zinc-900 uppercase tracking-wide mb-2 mt-2">Writing Samples (Optional)</label>
-                <textarea 
-                className="w-full bg-gray-50 border border-zinc-200 p-4 rounded-xl h-40 outline-none focus:border-red-600 focus:bg-white transition-all text-sm text-zinc-900 placeholder:text-zinc-400 resize-none"
-                placeholder="Paste your previous posts here to match style..." value={samples} onChange={(e) => setSamples(e.target.value)}
-                />
-            </div>
-
-            <button 
-              disabled={loading || isAiWriting} onClick={generatePost}
-              className={`w-full py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-xl ${
-                loading || isAiWriting ? "bg-zinc-100 text-zinc-400 cursor-not-allowed shadow-none" : "bg-red-600 hover:bg-black text-white shadow-red-600/20"
-              }`}
-            >
-              {loading || isAiWriting ? (
-                <span className="flex items-center justify-center gap-2">
-                   <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"></span>
-                   {step || "Generating..."}
-                </span>
-              ) : "Execute Manifesto"}
-            </button>
-          </div>
-
-          {completion && (
-            <div className="relative mt-10 p-10 bg-white text-zinc-900 rounded-3xl border border-zinc-200 shadow-2xl shadow-zinc-200/50 animate-in fade-in slide-in-from-bottom-4">
-              <div className="flex justify-between items-center mb-8 border-b border-zinc-100 pb-6">
-                <span className="text-[10px] font-black uppercase tracking-tighter text-zinc-400 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  Generated Output
-                </span>
-                <button onClick={copyToClipboard} className="flex items-center gap-2 text-xs font-bold text-zinc-500 hover:text-red-600 transition-colors">
-                  {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />} {copied ? "COPIED" : "COPY"}
-                </button>
-              </div>
-              <p className="whitespace-pre-wrap font-serif text-xl leading-relaxed text-zinc-800 selection:bg-red-100">
-                {completion}
-              </p>
-            </div>
+        {/* CREDIT DISPLAY */}
+        <div className="flex items-center gap-3">
+          {role === 'admin' ? (
+             <div className="bg-zinc-900 text-white px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                <Zap className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                Admin Mode (∞)
+             </div>
+          ) : (
+             <Link href="/dashboard/billing">
+                <div className={`px-4 py-2 rounded-full border flex items-center gap-2 transition-all hover:scale-105 ${
+                  (credits || 0) > 0 
+                  ? "bg-white border-zinc-200 text-zinc-700" 
+                  : "bg-red-50 border-red-200 text-red-700 animate-pulse"
+                }`}>
+                  <Zap className={`w-4 h-4 ${(credits || 0) > 0 ? "fill-yellow-400 text-yellow-500" : "fill-red-500 text-red-500"}`} />
+                  <span className="font-bold text-sm">{(credits ?? 0)} Credits</span>
+                </div>
+             </Link>
           )}
-        </main>
+        </div>
+      </header>
+
+      {/* INPUT AREA */}
+      <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-xl shadow-zinc-200/40 space-y-8">
+        <div>
+           <label className="flex items-center gap-2 text-xs font-black text-zinc-400 uppercase tracking-widest mb-3">
+             <div className="w-2 h-2 bg-red-500 rounded-full"></div> Target Audience
+           </label>
+           <AudienceSelector selected={userType} onChange={setUserType} />
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+           <div>
+              <label className="flex items-center gap-2 text-xs font-black text-zinc-900 uppercase tracking-widest mb-2">
+                 <Youtube className="w-4 h-4" /> YouTube Source
+              </label>
+              <input 
+                className="w-full bg-zinc-50 border border-zinc-200 p-4 rounded-xl outline-none focus:border-zinc-900 transition-all text-sm font-medium placeholder:text-zinc-400"
+                placeholder="https://youtube.com/watch?v=..." 
+                value={youtubeUrl} 
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+              />
+           </div>
+           <div>
+              <label className="flex items-center gap-2 text-xs font-black text-zinc-900 uppercase tracking-widest mb-2">
+                 <FileText className="w-4 h-4" /> Voice Samples
+              </label>
+              <textarea 
+                className="w-full bg-zinc-50 border border-zinc-200 p-4 rounded-xl h-[52px] focus:h-32 transition-all duration-300 outline-none focus:border-zinc-900 text-sm font-medium placeholder:text-zinc-400 resize-none"
+                placeholder="Paste previous posts or notes..." 
+                value={samples} 
+                onChange={(e) => setSamples(e.target.value)}
+              />
+           </div>
+        </div>
+
+        <div className="pt-2">
+          {(credits || 0) > 0 || role === 'admin' ? (
+             <button 
+               disabled={loading || isAiWriting || (!youtubeUrl && !samples)} 
+               onClick={generatePost}
+               className="w-full py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-900 text-white hover:bg-black hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+             >
+               {loading || isAiWriting ? (
+                 <>
+                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                   {step || "Processing..."}
+                 </>
+               ) : (
+                 <>
+                   <Wand2 className="w-5 h-5" /> Execute Manifesto
+                 </>
+               )}
+             </button>
+          ) : (
+             <Link href="/dashboard/billing" target="_blank">
+               <button className="w-full py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-lg bg-red-600 text-white hover:bg-red-700 hover:scale-[1.01] flex items-center justify-center gap-2">
+                  <CreditCard className="w-5 h-5" /> Recharge Credits
+               </button>
+             </Link>
+          )}
+        </div>
       </div>
+
+      {/* OUTPUT */}
+      {completion && (
+        <div className="animate-in fade-in slide-in-from-bottom-6 duration-700">
+          <div className="flex items-center justify-between mb-4 px-2">
+            <h3 className="font-bold text-zinc-400 uppercase tracking-widest text-xs flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              Generated Output
+            </h3>
+          </div>
+          <div className="flex justify-center">
+            <LinkedInPreview content={completion} role={userType} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
