@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Fingerprint className="w-5 h-5" />
             </div>
             <span className="font-black italic text-lg tracking-tighter text-zinc-900">
-              BOSSRWRITE
+              BOSSWRITE
             </span>
           </Link>
         </div>
@@ -83,7 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center text-white">
               <Fingerprint className="w-5 h-5" />
             </div>
-            <span className="font-black italic text-lg tracking-tighter">BOSSRWRITE</span>
+            <span className="font-black italic text-lg tracking-tighter">BOSSWRITE</span>
          </Link>
          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-zinc-600">
            <Menu className="w-6 h-6" />

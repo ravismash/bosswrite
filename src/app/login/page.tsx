@@ -81,7 +81,7 @@ export default function LoginPage() {
           <div className="w-10 h-10 bg-zinc-900 rounded-lg flex items-center justify-center text-white shadow-lg shadow-zinc-900/20">
             <Fingerprint className="w-6 h-6" />
           </div>
-          <span className="font-black italic text-2xl tracking-tighter">BOSSRWRITE</span>
+          <span className="font-black italic text-2xl tracking-tighter">BOSSWRITE</span>
         </div>
 
         {/* Value Prop */}
@@ -126,7 +126,7 @@ export default function LoginPage() {
           <div className="lg:hidden text-center mb-8">
              <div className="inline-flex items-center gap-2 mb-2">
                 <Fingerprint className="w-6 h-6 text-zinc-900" />
-                <span className="font-black italic text-2xl tracking-tighter">BOSSRWRITE</span>
+                <span className="font-black italic text-2xl tracking-tighter">BOSSWRITE</span>
              </div>
           </div>
 

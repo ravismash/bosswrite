@@ -57,13 +57,16 @@ export async function POST(req: Request) {
       // 3. Credits Logic
       if (userId) {
         let creditsToAdd = 0;
-
+        
         if (variantId === 1277381) creditsToAdd = 50;        // Monthly
         else if (variantId === 1295941) creditsToAdd = 1000; // Yearly
+
        //Live payement
-        /*if (variantId === 1295723) creditsToAdd = 50;        // Monthly
+       /*
+        if (variantId === 1295723) creditsToAdd = 50;        // Monthly
         else if (variantId === 1295725) creditsToAdd = 1000;
         */
+        
 
         if (creditsToAdd > 0) {
            console.log(`🚀 Adding ${creditsToAdd} credits to user ${userId}...`);

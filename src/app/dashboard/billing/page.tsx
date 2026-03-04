@@ -62,8 +62,8 @@ export default function BillingPage() {
       frequency: "/ mo",
       credits: 50,
       // 👇 Your specific Monthly Link
-      url: "https://bosswrite.lemonsqueezy.com/checkout/buy/d4818e82-44ba-484e-b68a-6fb9d01a1a69?enabled=1294424",
-      //url: "https://bosswrite.lemonsqueezy.com/checkout/buy/de1f0d88-24d4-45c9-a445-9d49207ee61d?enabled=1295723",
+      //url: "https://bosswrite.lemonsqueezy.com/checkout/buy/d4818e82-44ba-484e-b68a-6fb9d01a1a69?enabled=1294424",
+      url: "https://bosswrite.lemonsqueezy.com/checkout/buy/93b00b99-8657-4994-ad1b-30541fe1e86c?enabled=1277381",
       popular: false,
     },
     {
@@ -73,8 +73,8 @@ export default function BillingPage() {
       frequency: "/ yr",
       credits: 1000, 
       // 👇 Your specific Yearly Link
-      url: "https://bosswrite.lemonsqueezy.com/checkout/buy/2c7ff9c2-92ac-4f93-af87-32d581b7b703?enabled=1295941",
-      //url : "https://bosswrite.lemonsqueezy.com/checkout/buy/607d086f-7ceb-40bd-af5f-4a10a7989054?enabled=1295725",
+      //url: "https://bosswrite.lemonsqueezy.com/checkout/buy/2c7ff9c2-92ac-4f93-af87-32d581b7b703?enabled=1295941",
+      url : "https://bosswrite.lemonsqueezy.com/checkout/buy/2c7ff9c2-92ac-4f93-af87-32d581b7b703?enabled=1295941",
       popular: true,
       saveLabel: "Best Value: 1000 Credits"
     }
