@@ -87,30 +87,27 @@ export default function LoginPage() {
         {/* Value Prop */}
         <div className="space-y-8 relative z-10 max-w-lg">
           <h2 className="text-5xl font-bold tracking-tight text-zinc-900 leading-[1.1]">
-            Stop writing from scratch. <br />
-            <span className="text-zinc-400">Clone your best self.</span>
+            Turn videos into posts. <br />
+            <span className="text-zinc-400">Without the AI slop.</span>
           </h2>
           
           <div className="space-y-5">
-            <FeatureItem text="Clone your voice from YouTube videos" />
-            <FeatureItem text="Generate viral LinkedIn manifestos" />
-            <FeatureItem text="Enterprise-grade security & privacy" />
+            <FeatureItem text="Paste a  YouTube video" />
+            <FeatureItem text="Extract your exact tone and jargon" />
+            <FeatureItem text="Get 100% human-sounding drafts in 30s" />
           </div>
         </div>
 
-        {/* Social Proof */}
+      {/* Founder Note (Replaces Social Proof) */}
         <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm relative z-10">
-          <div className="flex gap-1 mb-3">
-            {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 fill-zinc-900 text-zinc-900" />)}
-          </div>
-          <p className="text-zinc-600 text-sm leading-relaxed mb-4 font-medium">
-            "I used to spend 4 hours a week on LinkedIn posts. BossWrite cut that down to 15 minutes. It's actually insane."
+          <p className="text-zinc-600 text-sm leading-relaxed mb-4 font-medium italic">
+            "I built BossWrite because I was tired of generic AI wrappers making everyone sound like a robotic middle manager. I wanted a tool that actually captures how builders speak."
           </p>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center text-xs font-bold text-zinc-400">AH</div>
+            <div className="w-8 h-8 bg-zinc-900 rounded-full flex items-center justify-center text-xs font-bold text-white">R</div>
             <div>
-              <p className="text-xs font-bold text-zinc-900">Alex Hormozi</p>
-              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wide">Founder, Acquisition.com</p>
+              <p className="text-xs font-bold text-zinc-900">Ravi</p>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wide">Solo Developer, BossWrite</p>
             </div>
           </div>
         </div>
